@@ -1,0 +1,151 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def LogisticMap(xStart,r):
+# Logistic map f1 with inputs r (coefficient) 
+# and xstart (starting value) 
+    return r*xStart*(1-xStart)
+
+def LogisticMap3(xStart,r):
+# Logistic map f3 with inputs r (coefficient) 
+# and xstart (starting value) 
+    xStart=r*xStart*(1-xStart)
+    xStart=r*xStart*(1-xStart)
+    return r*xStart*(1-xStart)
+
+def Attractors(inValue):
+# Which attractor of the three:
+#    0.15614931568360532 (attractor #1)
+#    0.50466648740841336 (attractor #2)
+#    0.95741659751887309 (attractor #3)
+# the inValue will go to.
+
+    inValuePre=inValue
+    inValueAfter=LogisticMap3(inValuePre,3.83)
+    
+    while(abs(inValueAfter-inValuePre) > 1e-15):
+        inValuePre=inValueAfter
+        inValueAfter=LogisticMap3(inValuePre,3.83)
+        
+    if (abs(inValueAfter-0.15615284127606932)<1e-5): 
+        return 1
+    elif (abs(inValueAfter-0.5046713276955876)<1e-5):     
+        return 2
+    else:
+        return 3
+
+def newInterval(yLeft,yRight):
+# Using the bisection method to find an interval smaller than 
+# 10^(-10) and then using f3 to obtain a new starting interval 
+
+    leftGoesTo = Attractors(yLeft)
+    rightGoesTo = Attractors(yRight)
+    midValue=(yLeft+yRight)/2
+    midGoesTo = Attractors(midValue) 
+    intervalSize=abs(yRight-yLeft)
+    
+    while( intervalSize > 1e-10 ):
+
+    
+        if ( midGoesTo != leftGoesTo and midGoesTo == rightGoesTo ):
+            yRight=midValue
+            midValue=(yLeft + yRight)/2
+            midGoesTo=Attractors(midValue)
+            intervalSize=abs(yRight-yLeft)
+
+        elif( midGoesTo == leftGoesTo and midGoesTo != rightGoesTo ):
+            yLeft=midValue
+            midValue=(yLeft + yRight)/2
+            midGoesTo=Attractors(midValue)
+            intervalSize=abs(yRight-yLeft)
+
+        else:
+            yLeft=midValue
+            midValue=(yLeft + yRight)/2
+            midGoesTo=Attractors(midValue)
+            intervalSize=abs(yRight-yLeft)
+            
+    return yLeft, yRight
+#====================================================================            
+                    
+""" Initialize array to contain Cantor set points """
+
+totalCantorPoints = 100000
+arrayCantorPoints = np.empty((totalCantorPoints,))
+xZeros = np.zeros((totalCantorPoints,))
+currentCantorPoints = 0
+
+""" Initializing the interval to make sure that the two ends go 
+to different attractors """
+
+yLeft = np.random.uniform()
+yRight = yLeft + 1e-6
+leftGoesTo = Attractors(yLeft)
+rightGoesTo = Attractors(yRight)
+while( leftGoesTo == rightGoesTo ):
+    yLeft = np.random.uniform()
+    yRight = yLeft + 1e-6
+    leftGoesTo = Attractors(yLeft)
+    rightGoesTo = Attractors(yRight)
+    
+    midValue=(yLeft+yRight)/2
+    midGoesTo = Attractors(midValue) 
+    
+    intervalSize=abs(yRight-yLeft)
+    
+""" Using the bisection method to obtain points of the 
+Cantor set """
+
+while(currentCantorPoints < totalCantorPoints):
+    
+    intervalSize=abs(yRight-yLeft)
+    yLeft,yRight = newInterval(yLeft,yRight)
+    yLeft = LogisticMap3(yLeft,3.83)   
+    yRight = LogisticMap3(yRight,3.83)
+
+  
+    foundAPoint = (yLeft+yRight)/2
+    arrayCantorPoints[currentCantorPoints] = foundAPoint
+    currentCantorPoints = currentCantorPoints + 1
+
+"""Initialize array to contain Cantor set points 
+for random intialization method"""   
+    
+totalCantorPoints = 100000
+arrayCantorPoints2 = np.empty((totalCantorPoints,))
+xZeros2 = np.zeros((totalCantorPoints,))
+currentCantorPoints = 0
+
+"""Use random initialization method to obtain points of Cantor set"""
+
+while(currentCantorPoints < totalCantorPoints):
+    
+    yLeft = 0.99999*np.random.uniform()
+    yRight = yLeft + 1e-10
+    #ensures that interval points remain between 0 and 1
+    
+    leftGoesTo=Attractors(yLeft)
+    rightGoesTo=Attractors(yRight)
+    
+    if ( leftGoesTo != rightGoesTo ):
+        foundAPoint = ( yLeft+yRight )/2
+        arrayCantorPoints2[currentCantorPoints] = foundAPoint
+        currentCantorPoints = currentCantorPoints + 1
+        
+#==================================================================== 
+
+"""Plotting"""
+
+# arrayCantorPoints2 is the method from the second version of basin code
+# arrayCantorPoints is the method originally intended
+  
+plt.plot(xZeros+0.0025, arrayCantorPoints,'b.',ms=0.05)    
+plt.plot(xZeros2-0.0025, arrayCantorPoints2,'r.',ms=0.05)        
+
+plt.xlabel('')
+plt.ylabel('x in Logistic Mapping')
+plt.title('Cantor Sets (red: random sampling method; blue:bisection method)')
+plt.axis([-0.1,0.1,0,1])        
+plt.grid()     
+plt.gcf().set_size_inches(12,12)  
+plt.show() 
