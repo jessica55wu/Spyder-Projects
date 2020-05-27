@@ -1,0 +1,36 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+m = float(input("Enter your starting x value: "))
+
+def logistic(r,x):
+    return r*x*(1-x)
+
+def plot_system (r, x0, n, ax=None):
+    #Plot the function and the
+    #y=x diagonal line
+    t=np.linspace(0,1)
+    ax.plot(t,logistic(r,t),'k',lw=2)
+    ax.plot([0,1],[0,1],'k',lw=2)
+
+    #Recursively apply y=f(x) and plot two lines:
+    # (x,x) -> (x,y)
+    # (x,y) -> (y,y)
+    x = x0
+    for i in range(n):
+        y = logistic(r,x)
+        ax.plot([x,x],[x,y],'k',lw=1)
+        ax.plot([x,y],[y,y],'k',lw=1)
+        ax.plot([x],[y],'ok', ms=3,
+                alpha=(i+1)/n)
+        x=y
+
+    ax.set_xlim(0,1)
+    ax.set_ylim(0,1)
+    ax.set_title(f"$r={r:0.1f},\,x_0={x0:0.1f}$")
+
+fig, (ax1, ax2) = plt.subplots(1,2,figsize=(12,6),sharey=True)
+plot_system(2.5,m,100,ax=ax1)
+plot_system(3.5,m,100,ax=ax2)
+
+plt.show()
