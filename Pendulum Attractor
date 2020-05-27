@@ -91,11 +91,6 @@ s=odeint(Pendulum,s0,t)
 sx=(s[45000:50000,0]-np.pi)%(2*np.pi)-np.pi
 sy=s[45000:50000,1]
 
-#for i in range(4999):
-#    if sy[i]>0 and sy[i+1]<0:
-#        print(sx[i],sy[i])
-#    if sy[i]<0 and sy[i+1]>0:
-#        print(sx[i],sy[i])
 print('the initial point goes to attractor: ', GoToAttractor(sx,sy) )
     
 
