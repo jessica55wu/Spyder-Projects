@@ -1,0 +1,65 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# defining the Logistic function
+def LogisticMap(xStart,r):
+    return r*xStart*(1-xStart)
+
+# specifying how many iterations needed
+iterNum=1000
+
+#break
+
+xs2=np.empty((iterNum,))
+xStart2=0.5
+
+for k in range(1000):
+    xxx2=np.zeros((500,))
+    yyy2=np.zeros((500,))
+    
+    r2=3.7+k*0.0003
+    
+    for i in range(iterNum):
+        xs2[i]=LogisticMap(xStart2,r2)
+        xStart2=xs2[i]
+        
+    xxx2=xxx2+r2
+    yyy2=xs2[0:500]
+        
+    plt.plot(xxx2,yyy2,'k.',ms=0.1)
+    
+    xStart2 = xs2[999]
+
+#break
+
+# creating the space need to store the series
+xs=np.empty((iterNum,))
+xStart=0.5
+
+# carrying out the calculations
+
+dots=10
+for k in range(1000):
+    xxx=np.zeros((dots,))
+    yyy=np.zeros((dots,))
+    
+    r=3.7+k*0.0003
+    
+    for i in range(iterNum):
+        xs[i]=LogisticMap(xStart,r)
+        xStart=xs[i]
+        
+    xxx=xxx+r
+    yyy=xs[0:dots]
+        
+    plt.plot(xxx,yyy,'r.',ms=0.6)
+    
+    xStart = 0.5
+    
+#break
+    
+plt.axhline(y=0.5)
+    
+plt.gcf().set_size_inches(18,18)
+plt.show
+
