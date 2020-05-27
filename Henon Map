@@ -1,0 +1,27 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def HenonMap(xStart,yStart,a=1.4,b=0.3):
+    xNew=1-a*xStart*xStart+yStart
+    yNew=b*xStart
+    return xNew,yNew
+
+iterNum=1000000
+
+xs=np.empty((iterNum,))
+ys=np.empty((iterNum,))
+
+xStart=float(input("Enter your starting x value: "))
+yStart=float(input("Enter your starting y value: "))
+a=float(input("Enter your parameter a value: "))
+b=float(input("Enter your parameter b value: "))
+
+for i in range(iterNum):
+    xs[i],ys[i]=HenonMap(xStart,yStart,a,b)
+    xStart=xs[i]
+    yStart=ys[i]
+
+plt.plot(xs,ys,'k.', markersize=0.01)
+plt.title(f"$a={a:0.2f},\,b={b:0.2f}$")
+plt.gcf().set_size_inches(19,19)
+plt.show
