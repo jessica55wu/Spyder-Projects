@@ -1,0 +1,20 @@
+import numpy as np
+from scipy.integrate import odeint
+import matplotlib.pyplot as plt
+
+def pendulum(s,t):
+    x = s[0]
+    y = s[1]
+    dxdt = y
+    dydt = (-0.2 * y) - (np.sin(x)) + (1.73 * np.cos(t))
+    return [dxdt, dydt]
+
+t = np.linspace(0,2000*np.pi,100001)
+s0 = [0,5]
+
+s = odeint(pendulum,s0,t)
+
+plt.plot(s[90000:100000,0]%(2*np.pi),s[90000:100000,1],'.',ms=2.0)
+plt.xlabel("oops")
+plt.ylabel("s[x,y]")
+plt.show()
