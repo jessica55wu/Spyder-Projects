@@ -15,6 +15,5 @@ s0 = [0,5]
 s = odeint(pendulum,s0,t)
 
 plt.plot(s[90000:100000,0]%(2*np.pi),s[90000:100000,1],'.',ms=2.0)
-plt.xlabel("oops")
 plt.ylabel("s[x,y]")
 plt.show()
