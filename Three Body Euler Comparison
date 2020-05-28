@@ -1,0 +1,141 @@
+#TWO THREE BODY SYSTEMS USING EULER METHOD WITH DIFFERENT TIMESTEP COMPARISON
+
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+G=6.67408e-11 #N-m2/kg2 #universal gravitation constant
+m_nd=1.989e+30 #kg #mass of the sun
+r_nd=5.326e+12 #m #distance between stars in Alpha Centauri
+v_nd=30000 #m/s #relative velocity of earth around the sun
+t_nd=79.91*365*24*3600*0.51 #s #orbital period of Alpha Centauri
+
+K1=G*t_nd*m_nd/(r_nd**2*v_nd)
+K2=v_nd*t_nd/r_nd 
+
+#Masses of three bodies in proportion to the sun's mass
+m1=1.0
+m2=1.0
+m3=1.0 
+#Initial position vectors
+r1=[-0.5,0,0] 
+r2=[0.5,0,0] 
+r3=[0,1,0]
+#Convert pos vectors to arrays
+r1=np.array(r1,dtype="float64")
+r2=np.array(r2,dtype="float64")
+r3=np.array(r3,dtype="float64")
+#Initial velocities
+v1=[0,0.02,0] #m/s
+v2=[0,-0.05,0] #m/s
+v3=[0,0,-0.01] #m/s
+#Convert velocity vectors to arrays
+v1=np.array(v1,dtype="float64")
+v2=np.array(v2,dtype="float64")
+v3=np.array(v3,dtype="float64")
+
+def ThreeBodyEquation(w,t,G,m1,m2,m3):
+    r1=w[:3]
+    r2=w[3:6]
+    r3=w[6:9]
+    v1=w[9:12]
+    v2=w[12:15]
+    v3=w[15:18]
+    
+    r12=np.linalg.norm(r2-r1)
+    r13=np.linalg.norm(r3-r1)
+    r23=np.linalg.norm(r3-r2)
+
+    dv1bydt=K1*m2*(r2-r1)/r12**3+K1*m3*(r3-r1)/r13**3
+    dv2bydt=K1*m1*(r1-r2)/r12**3+K1*m3*(r3-r2)/r23**3
+    dv3bydt=K1*m1*(r1-r3)/r13**3+K1*m2*(r2-r3)/r23**3
+    dr1bydt=K2*v1
+    dr2bydt=K2*v2
+    dr3bydt=K2*v3
+    
+    r12_derivs=np.concatenate((dr1bydt,dr2bydt))
+    r_derivs=np.concatenate((r12_derivs,dr3bydt))
+    v12_derivs=np.concatenate((dv1bydt,dv2bydt))
+    v_derivs=np.concatenate((v12_derivs,dv3bydt))
+    derivs=np.concatenate((r_derivs,v_derivs))
+    
+    return derivs
+
+#Package initial parameters
+init_params=np.array([r1,r2,r3,v1,v2,v3]) #create array of initial params
+init_params=init_params.flatten() #flatten array to make it 1D
+
+timesteps1=50000
+timesteps2=200000
+
+time=np.linspace(0,2,timesteps1) #2 orbital periods and 500 points
+timeinterval=time[1]-time[0]
+
+time2=np.linspace(0,2,timesteps2) #2 orbital periods and 500 points
+timeinterval2=time2[1]-time2[0]
+
+#Integrate using linear approximation
+three_body_sol=np.zeros((timesteps1,18))
+
+three_body_sol2=np.zeros((timesteps2,18))
+
+def IntegrateThreeBody(ThreeBodyEquation,init_params,timeinterval,args=(G,m1,m2,m3)):
+    for k in range(18):
+        three_body_sol[0,k]=init_params[k]
+    
+    i=0
+    while i<(timesteps1-1):
+        derivs_temp=ThreeBodyEquation(three_body_sol[i,0:18],timeinterval,G,m1,m2,m3)
+        derivs_step=timeinterval * derivs_temp
+        three_body_sol[i+1,:] = three_body_sol[i,:] + derivs_step
+        i=i+1
+
+IntegrateThreeBody(ThreeBodyEquation,init_params,timeinterval,args=(G,m1,m2,m3))
+
+def IntegrateThreeBody2(ThreeBodyEquation,init_params,timeinterval,args=(G,m1,m2,m3)):
+    for k in range(18):
+        three_body_sol2[0,k]=init_params[k]
+    
+    i=0
+    while i<(timesteps2-1):
+        derivs_temp=ThreeBodyEquation(three_body_sol2[i,0:18],timeinterval2,G,m1,m2,m3)
+        derivs_step=timeinterval2 * derivs_temp
+        three_body_sol2[i+1,:] = three_body_sol2[i,:] + derivs_step
+        i=i+1
+
+IntegrateThreeBody2(ThreeBodyEquation,init_params,timeinterval2,args=(G,m1,m2,m3))
+
+r1_sol=three_body_sol[:,:3]
+r2_sol=three_body_sol[:,3:6]
+r3_sol=three_body_sol[:,6:9]
+
+r1_sol2=three_body_sol2[:,:3]
+r2_sol2=three_body_sol2[:,3:6]
+r3_sol2=three_body_sol2[:,6:9]
+
+#Create figure
+fig=plt.figure(figsize=(15,15))
+
+#Create 3D axes
+ax=fig.add_subplot(111,projection="3d")
+ax.invert_zaxis()
+
+#Plot the orbits
+ax.plot(r1_sol[:,0],r1_sol[:,1],r1_sol[:,2],color="darkblue")
+ax.plot(r2_sol[:,0],r2_sol[:,1],r2_sol[:,2],color="maroon")
+ax.plot(r3_sol[:,0],r3_sol[:,1],r3_sol[:,2],color="darkolivegreen")
+ax.scatter(r1_sol[-1,0],r1_sol[-1,1],r1_sol[-1,2],color="darkblue",marker="o",s=50)
+ax.scatter(r2_sol[-1,0],r2_sol[-1,1],r2_sol[-1,2],color="maroon",marker="o",s=50)
+ax.scatter(r3_sol[-1,0],r3_sol[-1,1],r3_sol[-1,2],color="darkolivegreen",marker="o",s=50)
+
+ax.plot(r1_sol2[:,0],r1_sol2[:,1],r1_sol2[:,2],color="blue")
+ax.plot(r2_sol2[:,0],r2_sol2[:,1],r2_sol2[:,2],color="red")
+ax.plot(r3_sol2[:,0],r3_sol2[:,1],r3_sol2[:,2],color="green")
+ax.scatter(r1_sol2[-1,0],r1_sol2[-1,1],r1_sol2[-1,2],color="blue",marker="o",s=50)
+ax.scatter(r2_sol2[-1,0],r2_sol2[-1,1],r2_sol2[-1,2],color="red",marker="o",s=50)
+ax.scatter(r3_sol2[-1,0],r3_sol2[-1,1],r3_sol2[-1,2],color="green",marker="o",s=50)
+
+ax.set_xlabel("x",fontsize=14)
+ax.set_ylabel("y",fontsize=14)
+ax.set_zlabel("z",fontsize=14)
+
