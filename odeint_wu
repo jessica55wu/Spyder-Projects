@@ -1,0 +1,337 @@
+# my own odeint! :) 
+# make sure to run %matplotlib qt in the console beforehand 
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint
+from mpl_toolkits.mplot3d import Axes3D
+
+#--------------------------------
+#Global variables for the three body problem
+G=6.67408e-11           #N-m2/kg2 #universal gravitation constant
+mSun=1.989e+30          #kg #mass of the sun
+rConst=5.326e+12        #m #distance between stars in Alpha Centauri
+vEarthWRTSun=30000      #m/s #relative velocity of earth around the sun
+prdConst=79.91*365*24*3600*0.51     #s #orbital period of Alpha Centauri
+
+K1 = G * prdConst * mSun / (rConst**2 * vEarthWRTSun)
+K2 = vEarthWRTSun * prdConst / rConst
+#======================================
+
+#-------------------------------------
+#Global variables for the Lorenz attractor 
+s=10
+r=28
+b=8/3
+#====================================== 
+
+#--------------------------------------------------------------------
+def SplitStateVar(stateVar):
+# A function to split into variables the state of a three-body problem
+    r1=stateVar[:3]
+    r2=stateVar[3:6]
+    r3=stateVar[6:9]
+    v1=stateVar[9:12]
+    v2=stateVar[12:15]
+    v3=stateVar[15:18]
+    
+    return r1, r2, r3, v1, v2, v3
+#====================================================================
+
+#--------------------------------------------------------------------
+def AssembleStateVar(r1, r2, r3, v1, v2, v3):
+# A function to assemble all the state variables into one array for
+# a three-body problem
+    stateVar = np.empty((18,))
+    
+    stateVar[:3] = r1
+    stateVar[3:6] = r2
+    stateVar[6:9] = r3
+    stateVar[9:12] = v1
+    stateVar[12:15] = v2
+    stateVar[15:18] = v3
+    
+    return stateVar
+#====================================================================
+    
+#--------------------------------------------------------------------
+def ThreeBodyDerivative(w):
+    r1, r2, r3, v1, v2, v3 = SplitStateVar(w)
+
+    r12=np.linalg.norm(r2-r1)
+    r13=np.linalg.norm(r3-r1)
+    r23=np.linalg.norm(r3-r2)
+
+    dv1bydt=K1*m2*(r2-r1)/r12**3+K1*m3*(r3-r1)/r13**3
+    dv2bydt=K1*m1*(r1-r2)/r12**3+K1*m3*(r3-r2)/r23**3
+    dv3bydt=K1*m1*(r1-r3)/r13**3+K1*m2*(r2-r3)/r23**3
+    dr1bydt=K2*v1
+    dr2bydt=K2*v2
+    dr3bydt=K2*v3
+    
+    derivs = AssembleStateVar(dr1bydt,dr2bydt,dr3bydt,dv1bydt,dv2bydt,dv3bydt)
+    
+    return derivs
+#===================================================================
+    
+#--------------------------------------------------------------------
+#Defined for the odeint
+    
+def ThreeBodyEquation(w,t,G,m1,m2,m3):
+    r1=w[:3]
+    r2=w[3:6]
+    r3=w[6:9]
+    v1=w[9:12]
+    v2=w[12:15]
+    v3=w[15:18]
+    
+    r12=np.linalg.norm(r2-r1)
+    r13=np.linalg.norm(r3-r1)
+    r23=np.linalg.norm(r3-r2)
+
+    dv1bydt=K1*m2*(r2-r1)/r12**3+K1*m3*(r3-r1)/r13**3
+    dv2bydt=K1*m1*(r1-r2)/r12**3+K1*m3*(r3-r2)/r23**3
+    dv3bydt=K1*m1*(r1-r3)/r13**3+K1*m2*(r2-r3)/r23**3
+    dr1bydt=K2*v1
+    dr2bydt=K2*v2
+    dr3bydt=K2*v3
+    
+    r12_derivs=np.concatenate((dr1bydt,dr2bydt))
+    r_derivs=np.concatenate((r12_derivs,dr3bydt))
+    v12_derivs=np.concatenate((dv1bydt,dv2bydt))
+    v_derivs=np.concatenate((v12_derivs,dv3bydt))
+    derivs=np.concatenate((r_derivs,v_derivs))
+    
+    return derivs
+
+#===================================================================
+
+#--------------------------------------------------------------------
+def LorenzSystemDerivative(w, s=10, r=28, b=8/3):
+    ''' 
+    Given:
+    x, y, z: a point of interest in three dimensional space
+    s, r, b: parameters defining the lorenz attractor
+    Returns:
+    x_deriv, y_deriv, z_deriv: values of the lorenz attractor's partial
+    derivatives at the point x, y, z
+    '''
+    x = w[0]
+    y = w[1]
+    z = w[2]
+    
+    x_deriv = s*(y - x)
+    y_deriv = r*x - y - x*z
+    z_deriv = x*y - b*z
+    
+    derivs = np.array([x_deriv,y_deriv,z_deriv])
+    
+    return derivs
+#===================================================================
+    
+#--------------------------------------------------------------------
+def FirstOrderOneStep(state0, dt, DerivativeFunction):
+# A function to perform the intergration of the three-body problem with
+# the first order accuracy (forward difference in temporal domain)
+    
+    state1 = state0 + (dt * DerivativeFunction(state0))
+    
+    return state1
+#====================================================================
+    
+#---------------------------------------------------------------------
+def SecondOrderOneStep(state0, dt, DerivativeFunction):    
+# A function to perform the integration of the three-body problem with
+# the second order accuracy (semi-forward difference in temporal domain)
+    
+    derivs_0 = DerivativeFunction(state0)
+    state1 = FirstOrderOneStep(state0,dt,DerivativeFunction)
+    derivs_1 = DerivativeFunction(state1)
+    state1 = state0 + dt*((derivs_0 + derivs_1)/2)
+    
+    return state1
+#=====================================================================     
+
+#---------------------------------------------------------------------
+def ComputeErrorSecondOrder(i, dt, DerivativeFunction):
+    
+    state1 = SecondOrderOneStep(state0,dt,DerivativeFunction)
+    
+    statehalf = SecondOrderOneStep(state0,(dt/2),DerivativeFunction)
+    state1_2 = SecondOrderOneStep(statehalf,(dt/2),DerivativeFunction)
+    error = np.linalg.norm(state1 - state1_2)
+    
+    return error
+#=====================================================================
+    
+#---------------------------------------------------------------------
+def AdjustTimestep(i,dt,error,DerivativeFunction): 
+    
+    while (error < ErrorUpperBound):
+        dt = dt*(10/9)
+        error = ComputeErrorSecondOrder(i,dt,DerivativeFunction)
+    
+    while (error > ErrorUpperBound) and (dt>10**-8):
+        dt = dt*(9/10) 
+        error = ComputeErrorSecondOrder(i,dt,DerivativeFunction)
+         
+    return dt
+#=====================================================================
+
+#---------------------------------------------------------------------     
+def Energy(i):
+    
+    r1, r2, r3, v1, v2, v3 = SplitStateVar(three_body_sol[i])
+    
+    v1 = np.linalg.norm(v1)
+    v2 = np.linalg.norm(v2)
+    v3 = np.linalg.norm(v3)
+    
+    kineticenergy = 0.5 * ((m1*(v1**2)) + (m2*(v2**2)) + (m3*(v3**2)))
+     
+    r12 = np.linalg.norm(r1-r2) 
+    r23 = np.linalg.norm(r3-r2)
+    r13 = np.linalg.norm(r1-r3)
+    
+    potentialenergy = -G*(((m1*m2)/r12)+((m2*m3)/r23)+((m1*m3)/r13))
+    
+    totalenergy = kineticenergy + potentialenergy
+    
+    return totalenergy
+#=====================================================================
+
+#=====================================================================
+
+#Three Body Inputs
+
+#Masses of three bodies in proportion to the sun's mass
+m1=1.0
+m2=1.0
+m3=1.0
+#Initial position vectors
+r1=[-0.5,0.,0.]
+r2=[0.5,0.,0.]
+r3=[0.,1.,0.]
+#Initial velocities
+v1=[0.,0.02,0.]             #m/s
+v2=[0.,-0.05,0.]            #m/s
+v3=[0.,0.,-0.01]            #m/s
+
+timesteps = 3000
+
+dt=0.00004        #2 orbital periods
+ErrorUpperBound=10**-5
+
+#=====================================================================
+
+#Lorenz Inputs
+
+xs_initial = 0.
+ys_initial = 1.
+zs_initial = 1.05
+
+dt_Lorenz = 0.01
+timesteps_Lorenz = 4000
+
+#=====================================================================
+
+#Three Body Setup
+
+init_params = AssembleStateVar(r1, r2, r3, v1, v2, v3)
+
+three_body_sol=np.zeros((timesteps,18))
+
+errorArray = np.zeros(timesteps)
+energyArray = np.zeros(timesteps)
+dtArray = np.zeros(timesteps)
+
+three_body_sol[0,:]=init_params
+
+#=====================================================================
+
+#Lorenz Setup
+
+lorenz_sol=np.zeros((timesteps_Lorenz+1,3))
+
+lorenz_sol[0,:]=[xs_initial, ys_initial, zs_initial]
+
+#=====================================================================
+
+#Three Body Integration
+
+for i in range(1,timesteps):
+    
+    state0=three_body_sol[i-1,:]
+    
+    error = ComputeErrorSecondOrder(i,dt,ThreeBodyDerivative)
+    dt = AdjustTimestep(i,dt,error,ThreeBodyDerivative)
+    
+    three_body_sol[i,:] = SecondOrderOneStep(state0,dt,ThreeBodyDerivative)
+    
+    dtArray[i] = dt
+    errorArray[i] = error
+    energyArray[i] = Energy(i)
+
+#============================================================================
+    
+#Lorenz Integration
+    
+for i in range(timesteps_Lorenz):
+    state0 = lorenz_sol[i,:]
+    
+    error = ComputeErrorSecondOrder(i,dt_Lorenz,LorenzSystemDerivative)
+    dt = AdjustTimestep(i,dt_Lorenz,error,LorenzSystemDerivative)
+    
+    lorenz_sol[i+1,:] = SecondOrderOneStep(state0,dt_Lorenz,LorenzSystemDerivative)
+    
+#============================================================================
+    
+#Plotting Three Body
+    
+r1_sol=three_body_sol[:,0:3]
+r2_sol=three_body_sol[:,3:6]
+r3_sol=three_body_sol[:,6:9]
+
+#Create figure
+fig=plt.figure(figsize=(30,15))
+
+#Create 3D axes
+ax1=fig.add_subplot(121,projection="3d")
+ax1.invert_zaxis()
+
+#Plot the orbits
+ax1.plot(r1_sol[:,0],r1_sol[:,1],r1_sol[:,2],color="darkblue")
+ax1.plot(r2_sol[:,0],r2_sol[:,1],r2_sol[:,2],color="maroon")
+ax1.plot(r3_sol[:,0],r3_sol[:,1],r3_sol[:,2],color="darkolivegreen")
+
+ax1.set_xlabel("x",fontsize=14)
+ax1.set_ylabel("y",fontsize=14)
+ax1.set_zlabel("z",fontsize=14)
+ax1.set_title("Three Body Problem")
+
+#============================================================================
+    
+#Odeint Comparison
+
+# time=np.linspace(0,dt*timesteps,timesteps) 
+# three_body_sol_odeint=odeint(ThreeBodyEquation,init_params,time,args=(G,m1,m2,m3))
+
+# r1_sol_odeint=three_body_sol_odeint[:,0:3]
+# r2_sol_odeint=three_body_sol_odeint[:,3:6]
+# r3_sol_odeint=three_body_sol_odeint[:,6:9]
+
+# ax1.plot(r1_sol_odeint[:,0],r1_sol_odeint[:,1],r1_sol_odeint[:,2],color="blue")
+# ax1.plot(r2_sol_odeint[:,0],r2_sol_odeint[:,1],r2_sol_odeint[:,2],color="red")
+# ax1.plot(r3_sol_odeint[:,0],r3_sol_odeint[:,1],r3_sol_odeint[:,2],color="green")
+
+#============================================================================
+    
+#Plotting Lorenz
+
+ax_2=fig.add_subplot(122,projection="3d")
+ax_2.plot(lorenz_sol[:,0], lorenz_sol[:,1], lorenz_sol[:,2], lw=0.5,color="darkblue")
+ax_2.set_xlabel("x")
+ax_2.set_ylabel("y")
+ax_2.set_zlabel("z")
+ax_2.set_title("Lorenz Attractor")
+
