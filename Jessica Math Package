@@ -1,0 +1,649 @@
+"""
+Created on Sat May 30 16:44:12 2020
+
+@author: Jessica Wu
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint
+from mpl_toolkits.mplot3d import Axes3D
+
+#FUNCTIONS FOR SORTING/COMPARING/WORKING WITH NUMBERS/ARRAYS
+
+#----------------------------------------------------------------------
+def ArrayMax(anArray):
+    """
+    "ArrayMax" returns the location and value of the inputted "anArray"  
+
+    FUNCTION USAGE:
+        value, loc = ArrayMax(anArray)
+        
+    INPUT:
+        anArray:       an inputted array
+    OUTPUT:
+        value:         the maximum value of "anArray"
+        loc:           the array subscript value correspondint to the maximum 
+        
+    """
+    dd = len(anArray)
+    loc = 0
+    value = anArray[0]
+    
+    for i in range(1,dd):
+        if (anArray[i] > value):
+            loc = i
+            value = anArray[i]
+        
+    return loc, value
+#======================================================================
+
+#----------------------------------------------------------------------
+def ArrayMin(anArray):
+    """
+    "ArrayMin" returns the location and value of the inputted "anArray"  
+
+    FUNCTION USAGE:
+        value, loc = ArrayMin(anArray)
+        
+    INPUT:
+        anArray:       an inputted array
+    OUTPUT:
+        value:         the minimum value of "anArray"
+        loc:           the array subscript value correspondint to the minimum 
+        
+    """
+    dd = len(anArray)
+    loc = 0
+    value = anArray[0]
+    
+    for i in range(1,dd):
+        if (anArray[i] < value):
+            loc = i
+            value = anArray[i]
+        
+    return loc, value
+#======================================================================
+    
+#---------------------------------------------------------------------
+def is_a_max(a,b,c):
+    """
+    This function returns a bool value regarding whether the mid number
+    is a maximum among three numbers  
+
+    FUNCTION USAGE:
+        boolValue = is_a_max(a,b,c)
+    INPUT:
+        a, b, c:       three numbers
+    OUTPUT:
+        boolValue:     a bool value "True" or "False" 
+
+    """
+    return a<b and b>=c
+#======================================================================
+
+#---------------------------------------------------------------------
+def is_a_min(a,b,c):
+    """
+    This function returns a bool value regarding whether the mid number
+    is a maximum among three numbers  
+
+    FUNCTION USAGE:
+        boolValue = is_a_max(a,b,c)
+    INPUT:
+        a, b, c:       three numbers
+    OUTPUT:
+        boolValue:     a bool value "True" or "False" 
+        
+    """
+    return a>b and b<=c
+#======================================================================
+
+#---------------------------------------------------------------------
+def AllMaxima(indata):
+    """
+    This function returns the locations and their corresponding values of
+    maxima
+
+    FUNCTION USAGE:
+        maxLoc, maxValue = AllMaximaGreaterThanVal(indata)
+    INPUT:
+        indata:     1D serial data
+    OUTPUT:
+        maxLoc:     an 1D array containing locations of local maxima of
+                    of the inputted array "indata"
+        maxValue:   an 1D array containing values of local maxima of
+                    of the inputted array "indata" corresponding to "maxLoc"       
+ 
+    """
+    
+    dlength = len(indata)
+    maxLocP = np.zeros( (dlength),dtype=int )
+    maxValueP = np.zeros( (dlength),dtype=float )
+      
+    ii=0
+   
+    for i in range(1,dlength-1):
+        isAMax = is_a_max( indata[i-1], indata[i], indata[i+1] )
+        if (isAMax):
+            maxLocP[ii]=i
+            maxValueP[ii] = indata[i]
+            ii = ii+1
+           
+    maxLoc = maxLocP[0:ii]
+    maxValue = maxValueP[0:ii]
+    return maxLoc, maxValue
+#=====================================================================
+    
+#---------------------------------------------------------------------
+def AllMaxima2(indata):
+    """
+    This function returns the locations and their corresponding values of
+    maxima
+
+    FUNCTION USAGE:
+        maxLoc, maxValue = AllMaximaGreaterThanVal(indata)
+    INPUT:
+        indata:     1D serial data
+    OUTPUT:
+        maxLoc:     an 1D array containing locations of local maxima of
+                    of the inputted array "indata"
+        maxValue:   an 1D array containing linearly approximated values of local 
+                    maxima of the inputted array "indata" corresponding to "maxLoc"       
+ 
+    """
+    
+    dlength = len(indata)
+    maxLocP = np.zeros( (dlength),dtype=int )
+    maxValueP = np.zeros( (dlength),dtype=float )
+      
+    m=0
+   
+    for i in range(1,dlength-1):
+        isAMax = is_a_max( indata[i-1], indata[i], indata[i+1] )
+        if (isAMax):
+            maxLocP[m]=i
+            maxValueP[m] = (indata[i-1]+indata[i+1])/2
+            m = m+1
+           
+    maxLoc = maxLocP[0:m]
+    maxValue = maxValueP[0:m]
+    return maxLoc, maxValue
+#=====================================================================
+
+#---------------------------------------------------------------------
+def AllMaximaGreaterThanVal(indata,val):
+    """
+    This function returns the locations and their corresponding values of
+    maxima of a serial data greater than the "valueC"
+
+    FUNCTION USAGE:
+        maxLoc, maxValue = AllMaximaGreaterThanVal(indata, val)
+    INPUT:
+        indata:     1D serial data
+        val:     a threshold value
+    OUTPUT:
+        maxLoc:     an 1D array containing locations of local maxima of
+                    of the inputted array "indata"
+        maxValue:   an 1D array containing values of local maxima of
+                    of the inputted array "indata" corresponding to "maxLoc"       
+ 
+    """
+    
+    dlength = len(indata)
+    maxLocP = np.zeros( (dlength),dtype=int )
+    maxValueP = np.zeros( (dlength),dtype=float )
+      
+    ii=0
+   
+    for i in range(1,dlength-1):
+        isAMax = is_a_max( indata[i-1], indata[i], indata[i+1] )
+        if (isAMax and indata[i]> val):
+            maxLocP[ii]=i
+            maxValueP[ii] = indata[i]
+            ii = ii+1
+           
+    maxLoc = maxLocP[0:ii]
+    maxValue = maxValueP[0:ii]
+    return maxLoc, maxValue
+#=====================================================================
+
+#---------------------------------------------------------------------
+def AllMinimaInValueRange(indata,valLow,valUpper):
+    """
+    This function returns the locations and their corresponding values of
+    maxima of a serial data greater than the "valueC"
+
+    FUNCTION USAGE:
+        maxLoc, maxValue = AllMaximaGreaterThanVal(indata, val)
+    INPUT:
+        indata:     1D serial data
+        val:     a threshold value
+    OUTPUT:
+        maxLoc:     an 1D array containing locations of local maxima of
+                    of the inputted array "indata"
+        maxValue:   an 1D array containing values of local maxima of
+                    of the inputted array "indata" corresponding to "maxLoc"       
+
+    """
+    
+    dlength = len(indata)
+    minLocP = np.zeros( (dlength),dtype=int )
+    minValueP = np.zeros( (dlength),dtype=float )
+      
+    ii=0
+   
+    for i in range(1,dlength-1):
+        isAMin = is_a_min( indata[i-1], indata[i], indata[i+1] )
+        if (isAMin and (indata[i] > valLow) and (indata[i] < valUpper) ):
+            minLocP[ii]=i
+            minValueP[ii] = indata[i]
+            ii = ii+1
+           
+    minLoc = minLocP[0:ii]
+    minValue = minValueP[0:ii]
+    return minLoc, minValue
+#=====================================================================
+    
+#---------------------------------------------------------------------
+def firstValueGEQTo(Series,Value):
+    """
+    "firstValueGEQTo" returns the first value in a series that is greater than 
+    or equal to an input Value
+
+    FUNCTION USAGE:
+        value = firstValueGEQTo(Series,Value)
+        
+    INPUT:
+        Series:       an inputted array
+        Value:        a value to compare to
+    OUTPUT:
+        Series[i]:    the first value at the index in the series which is 
+                      greater than or equal to the input value
+        
+    """
+    for i in range(len(Series)):
+        if (Series[i]>=Value):
+            break
+    return Series[i]
+#======================================================================
+    
+#FUNCTIONS FOR VARIOUS WELL-KNOWN SYSTEMS
+    
+#--------------------------------------------------------------------
+def LorenzSystemDerivative(stateVector, s=10, r=28, b=8/3):
+    """
+    "LorenzSystemDerivative" returns the temporal derivatives of the Lorenz
+    System with known parameters and the state vector
+
+    FUNCTION USAGE:
+        derivs = LorenzSystemDerivative(stateVector)
+      OR
+        derivs = LorenzSystemDerivative(stateVector,s, r, b)
+        
+    INPUT:
+        stateVector:       (x,y,z) in array form
+        s, r, b:           optional parameters. When not given, standard
+                           Lorenz system parameters is given
+    OUTPUT:
+        derivs:            (dx/dt, dy/dt, dz/dt) in array form
+
+    """
+
+    x = stateVector[0]
+    y = stateVector[1]
+    z = stateVector[2]
+   
+    x_deriv = s*(y - x)
+    y_deriv = r*x - y - x*z
+    z_deriv = x*y - b*z
+   
+    derivs = np.array([x_deriv,y_deriv,z_deriv])
+   
+    return derivs
+#===================================================================
+    
+#-------------------------------------------------------------------
+def logistic(x,r=2.5):
+    """
+    "logistic" returns the value of the logistic function on some input
+
+    FUNCTION USAGE:
+        value = logistic(x)
+      OR
+        value = logistic(x,r)
+        
+    INPUT:
+        x:                 starting x value
+        r:                 optional parameter. When not given, r is
+                           arbitrarily set to 2.5
+    OUTPUT:
+        value:             output value of the logistic function
+
+    """
+    value = r*x*(1-x)
+    return value
+#===================================================================
+    
+#-------------------------------------------------------------------
+#Global variables for the three body problem
+G=6.67408e-11           #N-m2/kg2 #universal gravitation constant
+mSun=1.989e+30          #kg #mass of the sun
+rConst=5.326e+12        #m #distance between stars in Alpha Centauri
+vEarthWRTSun=30000      #m/s #relative velocity of earth around the sun
+prdConst=79.91*365*24*3600*0.51     #s #orbital period of Alpha Centauri
+
+#Net constants from nondimensionalization
+K1 = G * prdConst * mSun / (rConst**2 * vEarthWRTSun)
+K2 = vEarthWRTSun * prdConst / rConst
+#===================================================================
+
+#--------------------------------------------------------------------
+def ThreeBodyEquation(w,t,m1,m2,m3):
+    
+    """
+    "LorenzSystemDerivative" returns the temporal derivatives of the Three 
+     Body Problem with given mass values and a t linspace (written for use
+     with Python's built-in odeint function). If integrating with own function,
+     't' parameter is not necessary
+
+    FUNCTION USAGE:
+        derivs = ThreeBodyEquation(w,t,m1,m2,m3)
+        
+    INPUT:
+        w:                 state vector with a position vector and velocity 
+                           vector for each of the three bodies
+        t:                 linspace composed of time intervals to integrate over
+        m1, m2, m3:        masses of the three bodies
+        
+    OUTPUT:
+        derivs:            (dr1/dt, dr2/dt, dr3/dt, dv1/dt, dv2/dt, dv3/dt) 
+                           in array form
+
+    """
+    
+    r1=w[:3]
+    r2=w[3:6]
+    r3=w[6:9]
+    v1=w[9:12]
+    v2=w[12:15]
+    v3=w[15:18]
+    
+    r12=np.linalg.norm(r2-r1)
+    r13=np.linalg.norm(r3-r1)
+    r23=np.linalg.norm(r3-r2)
+
+    dv1bydt=K1*m2*(r2-r1)/r12**3+K1*m3*(r3-r1)/r13**3
+    dv2bydt=K1*m1*(r1-r2)/r12**3+K1*m3*(r3-r2)/r23**3
+    dv3bydt=K1*m1*(r1-r3)/r13**3+K1*m2*(r2-r3)/r23**3
+    dr1bydt=K2*v1
+    dr2bydt=K2*v2
+    dr3bydt=K2*v3
+    
+    r12_derivs=np.concatenate((dr1bydt,dr2bydt))
+    r_derivs=np.concatenate((r12_derivs,dr3bydt))
+    v12_derivs=np.concatenate((dv1bydt,dv2bydt))
+    v_derivs=np.concatenate((v12_derivs,dv3bydt))
+    derivs=np.concatenate((r_derivs,v_derivs))
+    
+    return derivs
+#===================================================================
+    
+#FUNCTIONS FOR INTEGRATION
+    
+#--------------------------------------------------------------------
+def FirstOrderOneStep(state0, dt, DerivativeFunction):
+    """
+    "FirstOrderOneStep" is a function to make a one step integration
+    of a given derivative function using forward difference, meaning with 
+    first order accuracy
+
+    FUNCTION USAGE:
+        state1 = FirstOrderOneStep(state0, dt, DerivativeFunction)
+        
+    INPUT:
+        state0:             state value array of i^th step
+        dt:                 temporal step size
+        DerivativeFucntion: the temporal derivative function
+                           
+    OUTPUT:
+        state1:             state value array of (i+1)^th step
+        
+    """
+   
+    state1 = state0 + (dt * DerivativeFunction(state0))
+   
+    return state1
+#====================================================================
+    
+#--------------------------------------------------------------------
+def SecondOrderOneStep(state0, dt, DerivativeFunction):   
+    """
+    "SecondOrderOneStep" is a function to make a one step integration
+    of a given derivative function using semi-forward difference, meaning with 
+    second order accuracy
+
+    FUNCTION USAGE:
+        state1 = SecondOrderOneStep(state0, dt, DerivativeFunction)
+        
+    INPUT:
+        state0:             state value array of i^th step
+        dt:                 temporal step size
+        DerivativeFucntion: the temporal derivative function
+                           
+    OUTPUT:
+        state1:             state value array of (i+1)^th step
+
+    """
+   
+    derivs_0 = DerivativeFunction(state0)
+    state1 = FirstOrderOneStep(state0,dt,DerivativeFunction)
+    derivs_1 = DerivativeFunction(state1)
+    state1 = state0 + dt*((derivs_0 + derivs_1)/2)
+   
+    return state1
+#==================================================================== 
+    
+#---------------------------------------------------------------------
+def ComputeErrorSecondOrder(i, dt, state0, DerivativeFunction):
+    
+    """
+    "ComputeErrorSecondOrder" is a function to integrate one step
+    of a given derivative function with second order accuracy and compare
+    the error between taking one timestep of given size and taking two
+    timesteps of half the given size
+
+    FUNCTION USAGE:
+        error = ComputeErrorSecondOrder(i, dt, state0, DerivativeFunction)
+        
+    INPUT:
+        i:                  iteration number in the overall integration
+        state0:             state value array of i^th step
+        dt:                 temporal step size
+        DerivativeFunction: the temporal derivative function
+                           
+    OUTPUT:
+        error:              computed error between one timestep and 
+                            two half-timesteps
+
+    """
+    
+    state1 = SecondOrderOneStep(state0,dt,DerivativeFunction)
+    
+    statehalf = SecondOrderOneStep(state0,(dt/2),DerivativeFunction)
+    state1_2 = SecondOrderOneStep(statehalf,(dt/2),DerivativeFunction)
+    error = np.linalg.norm(state1 - state1_2)
+    
+    return error
+#=====================================================================
+    
+#---------------------------------------------------------------------
+def AdjustTimestepSecondOrder(i,dt,error,DerivativeFunction,state0,ErrorUpperBound): 
+    
+    """
+    "AdjustTimestepSecondOrder" is a function to adjust the timestep size until the 
+    error is below the inputted ErrorUpperBound value
+
+    FUNCTION USAGE:
+        dt = AdjustTimestepRK(i,dt,error,DerivativeFunction,state0,ErrorUpperBound)
+        
+    INPUT:
+        i:                  iteration number in the overall integration
+        dt:                 current timestep size
+        error:              original error value by ComputeErrorRK function
+        DerivativeFunction: the temporal derivative function
+        state0:             state value array of i^th step
+        ErrorUpperBound:    maximum possible error
+                           
+    OUTPUT:
+        dt:                 adjusted timestep size
+
+    """
+    
+    while (error < ErrorUpperBound):
+        dt = dt*(10/9)
+        error = ComputeErrorSecondOrder(i,dt,state0, DerivativeFunction)
+    
+    while (error > ErrorUpperBound) and (dt>10**-8):
+        dt = dt*(9/10) 
+        error = ComputeErrorSecondOrder(i,dt,state0, DerivativeFunction)
+         
+    return dt
+#=====================================================================
+    
+#--------------------------------------------------------------------
+def RungeKuttaOneStep(state0, dt, DerivativeFunction):   
+    """
+    "RungeKuttaOneStep" is a function to make a one step integration
+    of a given derivative function using semi-forward difference, meaning with 
+    fourth order accuracy
+
+    FUNCTION USAGE:
+        state1 = RungeKuttaOneStep(state0, dt, DerivativeFunction)
+        
+    INPUT:
+        state0:             state value array of i^th step
+        dt:                 temporal step size
+        DerivativeFunction: the temporal derivative function
+                           
+    OUTPUT:
+        state1:             state value array of (i+1)^th step
+
+    """
+    
+    k1 = DerivativeFunction(state0)
+    y1 = state0 + (k1*0.5*dt)
+    k2 = DerivativeFunction(y1)
+    y2 = state0 + (k2*0.5*dt)
+    k3 = DerivativeFunction(y2)
+    y3 = state0 + (k3*dt)
+    k4 = DerivativeFunction(y3)
+    
+    m = ((1/6)*k1)+((1/3)*k2)+((1/3)*k3)+((1/6)*k4)
+    
+    state1 = state0 + (m*dt)
+
+    return state1
+#==================================================================== 
+    
+#---------------------------------------------------------------------
+def ComputeErrorRK(i, dt, state0, DerivativeFunction):
+    """
+    "ComputeErrorRK" is a function to integrate one step
+    of a given derivative function with fourth order accuracy and compare
+    the error between taking one timestep of given size and taking two
+    timesteps of half the given size
+
+    FUNCTION USAGE:
+        error = ComputeErrorRK(i, dt, state0, DerivativeFunction)
+        
+    INPUT:
+        i:                  iteration number in the overall integration
+        state0:             state value array of i^th step
+        dt:                 temporal step size
+        DerivativeFunction: the temporal derivative function
+                           
+    OUTPUT:
+        error:              computed error between one timestep and 
+                            two half-timesteps
+
+    """
+    
+    state1 = RungeKuttaOneStep(state0,dt,DerivativeFunction)
+    
+    statehalf = RungeKuttaOneStep(state0,(dt/2),DerivativeFunction)
+    state1_2 = RungeKuttaOneStep(statehalf,(dt/2),DerivativeFunction)
+    error = np.linalg.norm(state1 - state1_2)
+    
+    return error
+#=====================================================================
+    
+#---------------------------------------------------------------------
+def AdjustTimestepRK(i,dt,error,DerivativeFunction,state0,ErrorUpperBound): 
+
+    """
+    "AdjustTimestepRK" is a function to adjust the timestep size until the 
+    error is below the inputted ErrorUpperBound value
+
+    FUNCTION USAGE:
+        dt = AdjustTimestepRK(i,dt,error,DerivativeFunction,state0,ErrorUpperBound)
+        
+    INPUT:
+        i:                  iteration number in the overall integration
+        dt:                 current timestep size
+        error:              original error value by ComputeErrorRK function
+        DerivativeFunction: the temporal derivative function
+        state0:             state value array of i^th step
+        ErrorUpperBound:    maximum possible error
+                           
+    OUTPUT:
+        dt:                 adjusted timestep size
+
+    """
+    
+    while (error < ErrorUpperBound):
+        dt = dt*(10/9)
+        error = ComputeErrorRK(i,dt,state0, DerivativeFunction)
+    
+    while (error > ErrorUpperBound) and (dt>10**-8):
+        dt = dt*(9/10) 
+        error = ComputeErrorRK(i,dt,state0, DerivativeFunction)
+         
+    return dt
+#=====================================================================
+
+
+#FUNCTIONS FOR PLOTTING
+
+#--------------------------------------------------------------------
+def CobwebPlot(function, x0, n, lowerBound, upperBound, ax=None):
+    
+    """
+    "Cobweb Plot" is a function to plot a cobweb plot on some function with 
+    given number of iterations from some starting point
+
+    FUNCTION USAGE:
+        CobwebPlot(function, x0, n, lowerBound, upperBound, ax=None)
+        
+    INPUT:
+        function:       function to plot cobweb plot on
+        x0:             starting point
+        n:              number of steps in the cobweb plot
+        lowerBound:     lower bound of the y=x diagonal
+        upperBound:     upper bound of the y=x diagonal
+        ax:             subplot
+
+    """
+    
+    x = np.linspace(lowerBound,upperBound,1000)
+    
+    ax.plot(x,x)
+    
+    x = x0
+    for i in range(n):
+        y = function(x)
+        ax.plot([x,x],[x,y],'k',lw=1)
+        ax.plot([x,y],[y,y],'k',lw=1)
+        ax.plot([x],[y],'ok', ms=10, alpha=(i+1)/n)
+        x=y
+#==================================================================== 
