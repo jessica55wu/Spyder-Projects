@@ -1,0 +1,136 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import Jessica_Math as jm #IMPORT ALSO INCLUDED IN FILE LIST :) 
+
+G=6.67408e-11 #N-m2/kg2
+m_nd=1.989e+30 #kg 
+r_nd=5.326e+12 #m 
+v_nd=30000 #m/s 
+t_nd=79.91*365*24*3600*0.51 #s
+
+K1=G*t_nd*m_nd/(r_nd**2*v_nd)
+K2=v_nd*t_nd/r_nd 
+
+#Masses of two bodies in proportion to the sun's mass
+m1=10.0
+m2=1.0 
+
+#Initial position vectors
+r1=[-0.5,0] 
+r2=[0.5,0] 
+r3=[0.,0.1]
+r1=np.array(r1,dtype="float64")
+r2=np.array(r2,dtype="float64")
+r3=np.array(r3,dtype="float64")
+#Find center of mass
+r_com=(m1*r1+m2*r2)/(m1+m2)
+
+#Initial velocity vectors
+v1=[0,0.2] #m/s
+v2=[-0.05,0] #m/s
+v3=[0.01,-0.01] #m/s
+#Convert velocity vectors to arrays
+v1=np.array(v1,dtype="float64")
+v2=np.array(v2,dtype="float64")
+v3=np.array(v3,dtype="float64")
+#Find velocity of center of mass
+v_com=(m1*v1+m2*v2)/(m1+m2)
+
+def CRThreeBodyDerivative(w):
+    r1=w[:2]
+    r2=w[2:4]
+    r3=w[4:6]
+    v1=w[6:8]
+    v2=w[8:10]
+    v3=w[10:12]
+    
+    r12=np.linalg.norm(r2-r1)
+    r13=np.linalg.norm(r3-r1)
+    r23=np.linalg.norm(r3-r2)
+ 
+    dv1bydt=K1*m2*(r2-r1)/r12**3
+    dv2bydt=K1*m1*(r1-r2)/r12**3
+    dv3bydt=K1*m1*(r1-r3)/r13**3+K1*m2*(r2-r3)/r23**3
+    dr1bydt=K2*v1
+    dr2bydt=K2*v2
+    dr3bydt=K2*v3
+    
+    r12_derivs=np.concatenate((dr1bydt,dr2bydt))
+    r_derivs=np.concatenate((r12_derivs,dr3bydt))
+    v12_derivs=np.concatenate((dv1bydt,dv2bydt))
+    v_derivs=np.concatenate((v12_derivs,dv3bydt))
+    derivs=np.concatenate((r_derivs,v_derivs))
+    
+    return derivs
+
+def HamiltonianEnergy(w):
+
+    r1, r2, v1, v2 = w[:2], w[2:4], w[6:8], w[8:10]
+    
+    v1 = np.linalg.norm(v1)
+    v2 = np.linalg.norm(v2)
+    
+    kineticenergy = 0.5 * ((m1*(v1**2)) + (m2*(v2**2)))
+     
+    r12 = np.linalg.norm(r1-r2) 
+    
+    potentialenergy = -G*((m1*m2)/r12)
+    
+    totalenergy = kineticenergy + potentialenergy
+    
+    return totalenergy
+
+#Package initial parameters
+init_params=np.array([r1,r2,v1,v2])
+init_r_params=np.array([r1,r2]) 
+init_v_params=np.array([v1,v2])  
+init_params=init_params.flatten() 
+init_r_params=init_r_params.flatten() 
+init_v_params=init_v_params.flatten() 
+
+timesteps = 500
+dt = 0.00004
+
+ErrorUpperBound=10**-5
+
+three_body_sol=np.zeros((timesteps,12))
+Hamiltonian_energy=np.zeros((timesteps))
+
+#Add initial conditions to the solution array 
+for k in range(4):
+    three_body_sol[0,k]=init_r_params[k]
+for k in range(4):
+    three_body_sol[0,k+6]=init_v_params[k]
+
+for i in range(1,timesteps):
+    state0 = three_body_sol[i-1,:] 
+    Hamiltonian_energy[i] = HamiltonianEnergy(state0)
+    error = jm.ComputeErrorRK(i, dt, state0, CRThreeBodyDerivative)
+    dt = jm.AdjustTimestepRK(i, dt, error, CRThreeBodyDerivative, state0, ErrorUpperBound)
+    three_body_sol[i,:] = jm.RungeKuttaOneStep(state0,dt,CRThreeBodyDerivative)
+    
+r1_sol=three_body_sol[:,:2]
+r2_sol=three_body_sol[:,2:4]
+r3_sol=three_body_sol[:,4:6]
+
+rcom_sol=(m1*r1_sol+m2*r2_sol)/(m1+m2)
+
+r1com_sol=r1_sol-rcom_sol
+r2com_sol=r2_sol-rcom_sol
+r3com_sol=r3_sol-rcom_sol
+
+fig=plt.figure(figsize=(15,15))
+
+ax=fig.add_subplot(121)
+ax.plot(r1_sol[:,0],r1_sol[:,1],color="darkblue")
+ax.plot(r2_sol[:,0],r2_sol[:,1],color="red")
+ax.plot(r3_sol[:,0],r3_sol[:,1],color="green")
+ax.set_xlabel("x",fontsize=14)
+ax.set_ylabel("y",fontsize=14)
+
+ax2=fig.add_subplot(122)
+ax2.plot(r1com_sol[:,0],r1com_sol[:,1],color="darkblue")
+ax2.plot(r2com_sol[:,0],r2com_sol[:,1],color="red")
+ax2.plot(r3com_sol[:,0],r3com_sol[:,1],color="green")
+ax2.set_xlabel("x",fontsize=14)
+ax2.set_ylabel("y",fontsize=14)
